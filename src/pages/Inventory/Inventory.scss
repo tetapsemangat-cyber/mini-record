@@ -1,0 +1,379 @@
+// Inventory Block
+.inventory {
+  &__card {
+    background-color: #ffffff;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  &__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #16213e;
+    margin: 0;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  &__summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: #f8f8fc;
+    border-radius: 0.75rem;
+  }
+
+  &__summary-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  &__summary-label {
+    font-size: 0.875rem;
+    color: #5a5a7a;
+    text-align: center;
+  }
+
+  &__summary-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #4a4aea;
+
+    &--warning {
+      color: #cf222e;
+    }
+  }
+
+  &__button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+
+    &--primary {
+      background-color: #4a4aea;
+      color: #ffffff;
+
+      &:hover {
+        background-color: #3a3ada;
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+
+    &--secondary {
+      background-color: #f0f0f5;
+      color: #16213e;
+
+      &:hover {
+        background-color: #e0e0e5;
+      }
+    }
+
+    &--edit {
+      padding: 0.35rem 0.75rem;
+      font-size: 0.875rem;
+      margin-right: 0.5rem;
+      background-color: #e6f7ed;
+      color: #2da44e;
+
+      &:hover {
+        background-color: #d6f0dd;
+      }
+    }
+
+    &--delete {
+      padding: 0.35rem 0.75rem;
+      font-size: 0.875rem;
+      background-color: #ffebe9;
+      color: #cf222e;
+
+      &:hover {
+        background-color: #ffdad7;
+      }
+    }
+  }
+
+  &__action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  &__table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+  }
+
+  &__table-head {
+    background-color: #f8f8fc;
+  }
+
+  &__table-header {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: #5a5a7a;
+    border-bottom: 1px solid #e0e0e0;
+    white-space: nowrap;
+  }
+
+  &__table-row {
+    border-bottom: 1px solid #f0f0f0;
+
+    &:hover {
+      background-color: #f8f8fc;
+    }
+  }
+
+  &__table-cell {
+    padding: 1rem;
+    color: #3a3a5a;
+
+    &--total {
+      font-weight: 600;
+      color: #4a4aea;
+    }
+  }
+
+  &__status {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+
+    &--available {
+      background-color: #e6f7ed;
+      color: #2da44e;
+    }
+
+    &--low {
+      background-color: #fff8c5;
+      color: #9a6700;
+    }
+
+    &--out {
+      background-color: #ffebe9;
+      color: #cf222e;
+    }
+  }
+
+  // Modal styles
+  &__modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+  }
+
+  &__modal {
+    background-color: #ffffff;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  &__modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  &__modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #16213e;
+    margin: 0;
+  }
+
+  &__modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #5a5a7a;
+    cursor: pointer;
+    padding: 0;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: #f0f0f5;
+    }
+  }
+
+  &__form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  &__form-group {
+    display: flex;
+    flex-direction: column;
+
+    &--full {
+      grid-column: 1 / -1;
+    }
+  }
+
+  &__label {
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #5a5a7a;
+    font-size: 0.875rem;
+  }
+
+  &__input {
+    padding: 0.75rem 1rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: #4a4aea;
+    }
+  }
+
+  &__preview {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: #f8f8fc;
+    border-radius: 0.5rem;
+  }
+
+  &__preview-label {
+    font-size: 0.875rem;
+    color: #5a5a7a;
+  }
+
+  &__preview-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #4a4aea;
+  }
+
+  &__modal-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+  }
+
+  // Responsive styles
+  @media (max-width: 768px) {
+    &__card {
+      padding: 1rem;
+    }
+
+    &__header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    &__title {
+      text-align: center;
+    }
+
+    &__actions {
+      justify-content: center;
+    }
+
+    &__summary {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      padding: 0.75rem;
+    }
+
+    &__summary-value {
+      font-size: 1.25rem;
+    }
+
+    &__form {
+      grid-template-columns: 1fr;
+    }
+
+    &__modal {
+      max-height: 95vh;
+    }
+
+    &__table-header,
+    &__table-cell {
+      padding: 0.75rem 0.5rem;
+      font-size: 0.875rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    &__summary {
+      grid-template-columns: 1fr;
+    }
+
+    &__button {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+    }
+
+    &__modal-actions {
+      flex-direction: column;
+
+      .inventory__button {
+        width: 100%;
+      }
+    }
+  }
+}

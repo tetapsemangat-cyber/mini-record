@@ -1,0 +1,130 @@
+// Daily Usage / Expense Tracker Block
+.daily-usage {
+  &__card {
+    background-color: #ffffff;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  &__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #16213e;
+    margin: 0;
+  }
+
+  &__summary {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  &__summary-card {
+    background-color: #f8f8fc;
+    padding: 1rem 1.5rem;
+    border-radius: 0.75rem;
+    text-align: center;
+    min-width: 140px;
+    flex-shrink: 0;
+  }
+
+  &__summary-label {
+    font-size: 0.875rem;
+    color: #5a5a7a;
+    margin-bottom: 0.5rem;
+  }
+
+  &__summary-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #4a4aea;
+    word-break: break-all;
+  }
+
+  &__category {
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background-color: #e8e8f0;
+    color: #5a5a7a;
+    text-transform: capitalize;
+  }
+
+  &__notes {
+    color: #5a5a7a;
+    font-style: italic;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__empty {
+    text-align: center;
+    padding: 2rem;
+    color: #5a5a7a;
+    font-style: italic;
+  }
+
+  // Responsive styles
+  @media (max-width: 768px) {
+    &__card {
+      padding: 1rem;
+    }
+
+    &__header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    &__title {
+      text-align: center;
+    }
+
+    &__summary {
+      justify-content: center;
+    }
+
+    &__summary-card {
+      min-width: 120px;
+      padding: 0.875rem 1rem;
+    }
+
+    &__summary-value {
+      font-size: 1.5rem;
+    }
+
+    &__notes {
+      max-width: 150px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    &__summary {
+      flex-direction: column;
+    }
+
+    &__summary-card {
+      width: 100%;
+      min-width: unset;
+    }
+
+    &__notes {
+      max-width: 100px;
+    }
+  }
+}
