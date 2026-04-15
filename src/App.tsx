@@ -1,20 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Sidebar } from './components';
 import { Inventory, DailyUsage, SettlementMatrix } from './pages';
 import { useInventory, useDailyUsage, useSettlement } from './hooks';
 import type { SettlementItem } from './types';
 import './App.scss';
-
-const mockStats: SettlementItem = {
-  id: '',
-  title: '',
-  date: new Date(),
-  amount: 0,
-  status: 'pending',
-  reference: '',
-  payer: '',
-  debtors: [],
-};
 
 function App() {
   const [currentView, setCurrentView] = useState<'inventory' | 'daily-usage' | 'settlement'>('inventory');
@@ -39,13 +28,8 @@ function App() {
     settlements,
     loading: settlementLoading,
     createSettlement,
-    updateStatus,
     updateSettlement,
   } = useSettlement();
-
-  const handleUpdateStatus = (id: string, status: 'pending' | 'completed') => {
-    updateStatus(id, status);
-  };
 
   const handleCreateSettlement = (settlement: Omit<SettlementItem, 'id' | 'date' | 'status'>) => {
     createSettlement({
@@ -100,7 +84,6 @@ function App() {
           {currentView === 'settlement' && (
             <SettlementMatrix
               settlements={settlements}
-              onUpdateStatus={handleUpdateStatus}
               onCreateSettlement={handleCreateSettlement}
               onUpdateSettlement={handleUpdateSettlement}
               loading={settlementLoading}

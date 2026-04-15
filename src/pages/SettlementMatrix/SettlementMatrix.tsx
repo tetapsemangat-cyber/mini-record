@@ -6,7 +6,6 @@ export interface SettlementMatrixProps {
   settlements: SettlementItem[];
   onCreateSettlement?: (settlement: Omit<SettlementItem, 'id' | 'date' | 'status'>) => void;
   onUpdateSettlement?: (id: string, updates: Partial<Omit<SettlementItem, 'id' | 'date' | 'status'>>) => void;
-  onUpdateStatus?: (id: string, status: 'pending' | 'completed') => void;
   loading?: boolean;
 }
 
@@ -19,7 +18,6 @@ export const SettlementMatrix: React.FC<SettlementMatrixProps> = ({
   settlements,
   onCreateSettlement,
   onUpdateSettlement,
-  onUpdateStatus,
   loading = false,
 }) => {
   const [showForm, setShowForm] = useState(false);
