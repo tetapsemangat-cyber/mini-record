@@ -47,6 +47,15 @@ export interface SettlementItem {
   debtors: DebtorOwe[];
 }
 
+export type DateFilterType = 'all' | 'today' | 'thisMonth' | 'custom';
+
+export interface DateFilterConfig {
+  filterType: DateFilterType;
+  filterMonth: string;
+  filterStartDate: string;
+  filterEndDate: string;
+}
+
 export interface DashboardView {
   currentView: 'inventory' | 'daily-usage' | 'settlement';
 }

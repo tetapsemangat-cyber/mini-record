@@ -1,22 +1,9 @@
 import React, { useState } from 'react';
-import type { DailyUsageRecord, ExpenseFormData } from '../../types';
+import { useDailyUsage } from '../../hooks/useDailyUsage';
+import type { DailyUsageRecord, ExpenseFormData, DateFilterConfig } from '../../types';
 import './DailyUsage.scss';
 
-export interface DailyUsageProps {
-  records: DailyUsageRecord[];
-  onCreateRecord: (data: ExpenseFormData) => Promise<void>;
-  onUpdateRecord: (id: string, data: Partial<ExpenseFormData>) => Promise<void>;
-  onDeleteRecord: (id: string) => Promise<void>;
-  loading?: boolean;
-}
-
-export const DailyUsage: React.FC<DailyUsageProps> = ({
-  records,
-  onCreateRecord,
-  onUpdateRecord,
-  onDeleteRecord,
-  loading = false,
-}) => {
+export const DailyUsage: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingRecord, setEditingRecord] = useState<DailyUsageRecord | null>(null);
   const [formData, setFormData] = useState<ExpenseFormData>({
@@ -26,13 +13,25 @@ export const DailyUsage: React.FC<DailyUsageProps> = ({
     date: new Date().toISOString().split('T')[0],
     notes: '',
   });
+  const [filterConfig, setFilterConfig] = useState<DateFilterConfig>({
+    filterType: 'all',
+    filterMonth: new Date().toISOString().slice(0, 7),
+    filterStartDate: '',
+    filterEndDate: '',
+  });
 
-  const expensesByPerson = records.reduce((acc, record) => {
-    acc[record.person] = (acc[record.person] || 0) + record.amount;
-    return acc;
-  }, {} as Record<string, number>);
+  const {
+    records,
+    loading,
+    createRecord,
+    updateRecord,
+    deleteRecord,
+    getTotalExpenses,
+    getExpensesByPerson,
+  } = useDailyUsage(filterConfig);
 
-  const totalExpenses = records.reduce((sum, record) => sum + record.amount, 0);
+  const expensesByPerson = getExpensesByPerson();
+  const totalExpenses = getTotalExpenses();
 
   const openAddModal = () => {
     setEditingRecord(null);
@@ -62,9 +61,9 @@ export const DailyUsage: React.FC<DailyUsageProps> = ({
     e.preventDefault();
     try {
       if (editingRecord) {
-        await onUpdateRecord(editingRecord.id, formData);
+        await updateRecord(editingRecord.id, formData);
       } else {
-        await onCreateRecord(formData);
+        await createRecord(formData);
       }
       setShowModal(false);
     } catch (error) {
@@ -74,7 +73,7 @@ export const DailyUsage: React.FC<DailyUsageProps> = ({
 
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this record?')) {
-      await onDeleteRecord(id);
+      await deleteRecord(id);
     }
   };
 
@@ -90,6 +89,89 @@ export const DailyUsage: React.FC<DailyUsageProps> = ({
           <button className="inventory__button inventory__button--primary" onClick={openAddModal}>
             + Add Expense
           </button>
+        </div>
+
+        {/* Filter Section */}
+        <div className="daily-usage__filter">
+          <div className="daily-usage__filter-buttons">
+            <button
+              className={`inventory__button ${filterConfig.filterType === 'all' ? 'inventory__button--primary' : 'inventory__button--secondary'}`}
+              onClick={() => setFilterConfig(prev => ({ ...prev, filterType: 'all' }))}
+            >
+              All Time
+            </button>
+            <button
+              className={`inventory__button ${filterConfig.filterType === 'today' ? 'inventory__button--primary' : 'inventory__button--secondary'}`}
+              onClick={() => setFilterConfig(prev => ({ ...prev, filterType: 'today' }))}
+            >
+              Today
+            </button>
+            <button
+              className={`inventory__button ${filterConfig.filterType === 'thisMonth' ? 'inventory__button--primary' : 'inventory__button--secondary'}`}
+              onClick={() => setFilterConfig(prev => ({ ...prev, filterType: 'thisMonth' }))}
+            >
+              This Month
+            </button>
+            <button
+              className={`inventory__button ${filterConfig.filterType === 'custom' ? 'inventory__button--primary' : 'inventory__button--secondary'}`}
+              onClick={() => setFilterConfig(prev => ({ ...prev, filterType: 'custom' }))}
+            >
+              Custom
+            </button>
+          </div>
+
+          {filterConfig.filterType === 'custom' && (
+            <div className="daily-usage__filter-custom">
+              <div className="daily-usage__filter-month">
+                <label className="inventory__label">Filter by Month:</label>
+                <input
+                  type="month"
+                  className="inventory__input"
+                  value={filterConfig.filterMonth}
+                  onChange={(e) => {
+                    setFilterConfig(prev => ({
+                      ...prev,
+                      filterMonth: e.target.value,
+                      filterStartDate: '',
+                      filterEndDate: '',
+                    }));
+                  }}
+                />
+              </div>
+              <div className="daily-usage__filter-date-range">
+                <div className="daily-usage__filter-date">
+                  <label className="inventory__label">From:</label>
+                  <input
+                    type="date"
+                    className="inventory__input"
+                    value={filterConfig.filterStartDate}
+                    onChange={(e) => {
+                      setFilterConfig(prev => ({
+                        ...prev,
+                        filterStartDate: e.target.value,
+                        filterMonth: '',
+                      }));
+                    }}
+                  />
+                </div>
+                <div className="daily-usage__filter-date">
+                  <label className="inventory__label">To:</label>
+                  <input
+                    type="date"
+                    className="inventory__input"
+                    value={filterConfig.filterEndDate}
+                    onChange={(e) => {
+                      setFilterConfig(prev => ({
+                        ...prev,
+                        filterEndDate: e.target.value,
+                        filterMonth: '',
+                      }));
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="daily-usage__summary">
@@ -121,7 +203,7 @@ export const DailyUsage: React.FC<DailyUsageProps> = ({
             {sortedRecords.length === 0 ? (
               <tr>
                 <td colSpan={7} className="daily-usage__empty">
-                  No expenses recorded yet
+                  {filterConfig.filterType === 'all' ? 'No expenses recorded yet' : 'No expenses found for this filter'}
                 </td>
               </tr>
             ) : (
@@ -210,10 +292,13 @@ export const DailyUsage: React.FC<DailyUsageProps> = ({
                   step="0.01"
                   min="0"
                   className="inventory__input"
-                  value={formData.amount}
-                  onChange={(e) =>
-                    setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })
-                  }
+                  value={formData.amount === 0 ? '' : formData.amount}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const cleaned = value.replace(/^0+(\d)/, '$1').replace(/^0+([^0.])/, '$1');
+                    const numValue = parseFloat(cleaned);
+                    setFormData({ ...formData, amount: isNaN(numValue) ? 0 : numValue });
+                  }}
                   required
                 />
               </div>

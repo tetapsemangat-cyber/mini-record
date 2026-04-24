@@ -16,6 +16,44 @@
     gap: 1rem;
   }
 
+  &__filter {
+    background-color: #f8f8fc;
+    padding: 1rem 1.25rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  &__filter-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  &__filter-custom {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  &__filter-month {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  &__filter-date-range {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  &__filter-date {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
   &__title {
     font-size: 1.25rem;
     font-weight: 600;

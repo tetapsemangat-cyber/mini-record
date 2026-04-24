@@ -29,6 +29,18 @@ export const inventoryService = {
     return data.map(fromDb);
   },
 
+  async getByDateRange(startDate: Date, endDate: Date): Promise<InventoryItem[]> {
+    const { data, error } = await supabase
+      .from('inventory')
+      .select('*')
+      .gte('last_updated', startDate.toISOString())
+      .lte('last_updated', endDate.toISOString())
+      .order('last_updated', { ascending: false });
+
+    if (error) throw error;
+    return data.map(fromDb);
+  },
+
   async getById(id: string): Promise<InventoryItem> {
     const { data, error } = await supabase
       .from('inventory')

@@ -33,6 +33,18 @@ export const settlementService = {
     return data.map(fromDb);
   },
 
+  async getByDateRange(startDate: Date, endDate: Date): Promise<SettlementItem[]> {
+    const { data, error } = await supabase
+      .from('settlements')
+      .select('*')
+      .gte('date', startDate.toISOString().split('T')[0])
+      .lte('date', endDate.toISOString().split('T')[0])
+      .order('date', { ascending: false });
+
+    if (error) throw error;
+    return data.map(fromDb);
+  },
+
   async getById(id: string): Promise<SettlementItem> {
     const { data, error } = await supabase
       .from('settlements')

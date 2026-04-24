@@ -1,22 +1,9 @@
 import React, { useState } from 'react';
-import type { InventoryItem, InventoryFormData } from '../../types';
+import { useInventory } from '../../hooks/useInventory';
+import type { InventoryItem, InventoryFormData, DateFilterConfig } from '../../types';
 import './Inventory.scss';
 
-export interface InventoryProps {
-  items: InventoryItem[];
-  onCreateItem: (data: InventoryFormData) => Promise<void>;
-  onUpdateItem: (id: string, data: Partial<InventoryFormData>) => Promise<void>;
-  onDeleteItem: (id: string) => Promise<void>;
-  loading?: boolean;
-}
-
-export const Inventory: React.FC<InventoryProps> = ({
-  items,
-  onCreateItem,
-  onUpdateItem,
-  onDeleteItem,
-  loading = false,
-}) => {
+export const Inventory: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [formData, setFormData] = useState<InventoryFormData>({
@@ -24,8 +11,23 @@ export const Inventory: React.FC<InventoryProps> = ({
     quantity: 0,
     price: 0,
   });
+  const [filterConfig, setFilterConfig] = useState<DateFilterConfig>({
+    filterType: 'all',
+    filterMonth: new Date().toISOString().slice(0, 7),
+    filterStartDate: '',
+    filterEndDate: '',
+  });
 
-  const totalValue = items.reduce((sum, item) => sum + item.quantity * item.price, 0);
+  const {
+    items,
+    loading,
+    createItem,
+    updateItem,
+    deleteItem,
+    getTotalValue,
+  } = useInventory(filterConfig);
+
+  const totalValue = getTotalValue();
   const itemTotal = formData.quantity * formData.price;
 
   const openAddModal = () => {
@@ -48,9 +50,9 @@ export const Inventory: React.FC<InventoryProps> = ({
     e.preventDefault();
     try {
       if (editingItem) {
-        await onUpdateItem(editingItem.id, formData);
+        await updateItem(editingItem.id, formData);
       } else {
-        await onCreateItem(formData);
+        await createItem(formData);
       }
       setShowModal(false);
     } catch (error) {
@@ -60,7 +62,7 @@ export const Inventory: React.FC<InventoryProps> = ({
 
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this item?')) {
-      await onDeleteItem(id);
+      await deleteItem(id);
     }
   };
 
@@ -76,10 +78,96 @@ export const Inventory: React.FC<InventoryProps> = ({
           </div>
         </div>
 
+        {/* Filter Section */}
+        <div className="inventory__filter">
+          <div className="inventory__filter-row">
+            <div className="inventory__filter-group">
+              <label className="inventory__label">Filter by Date:</label>
+              <div className="inventory__filter-buttons">
+                <button
+                  className={`inventory__button ${filterConfig.filterType === 'all' ? 'inventory__button--primary' : 'inventory__button--secondary'}`}
+                  onClick={() => setFilterConfig(prev => ({ ...prev, filterType: 'all' }))}
+                >
+                  All Time
+                </button>
+                <button
+                  className={`inventory__button ${filterConfig.filterType === 'today' ? 'inventory__button--primary' : 'inventory__button--secondary'}`}
+                  onClick={() => setFilterConfig(prev => ({ ...prev, filterType: 'today' }))}
+                >
+                  Today
+                </button>
+                <button
+                  className={`inventory__button ${filterConfig.filterType === 'thisMonth' ? 'inventory__button--primary' : 'inventory__button--secondary'}`}
+                  onClick={() => setFilterConfig(prev => ({ ...prev, filterType: 'thisMonth' }))}
+                >
+                  This Month
+                </button>
+                <button
+                  className={`inventory__button ${filterConfig.filterType === 'custom' ? 'inventory__button--primary' : 'inventory__button--secondary'}`}
+                  onClick={() => setFilterConfig(prev => ({ ...prev, filterType: 'custom' }))}
+                >
+                  Custom
+                </button>
+              </div>
+            </div>
+
+            {filterConfig.filterType === 'custom' && (
+              <div className="inventory__filter-custom-dates">
+                <div className="inventory__filter-date-item">
+                  <label className="inventory__label">Month:</label>
+                  <input
+                    type="month"
+                    className="inventory__input"
+                    value={filterConfig.filterMonth}
+                    onChange={(e) => {
+                      setFilterConfig(prev => ({
+                        ...prev,
+                        filterMonth: e.target.value,
+                        filterStartDate: '',
+                        filterEndDate: '',
+                      }));
+                    }}
+                  />
+                </div>
+                <div className="inventory__filter-date-item">
+                  <label className="inventory__label">From:</label>
+                  <input
+                    type="date"
+                    className="inventory__input"
+                    value={filterConfig.filterStartDate}
+                    onChange={(e) => {
+                      setFilterConfig(prev => ({
+                        ...prev,
+                        filterStartDate: e.target.value,
+                        filterMonth: '',
+                      }));
+                    }}
+                  />
+                </div>
+                <div className="inventory__filter-date-item">
+                  <label className="inventory__label">To:</label>
+                  <input
+                    type="date"
+                    className="inventory__input"
+                    value={filterConfig.filterEndDate}
+                    onChange={(e) => {
+                      setFilterConfig(prev => ({
+                        ...prev,
+                        filterEndDate: e.target.value,
+                        filterMonth: '',
+                      }));
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="inventory__summary">
           <div className="inventory__summary-item">
-            <span className="inventory__summary-label">Total Items:</span>
-            <span className="inventory__summary-value">{items.length}</span>
+            <span className="inventory__summary-label">Showing:</span>
+            <span className="inventory__summary-value">{items.length === 0 ? 'No items' : `${items.length} items`}</span>
           </div>
           <div className="inventory__summary-item">
             <span className="inventory__summary-label">Total Value:</span>
@@ -100,35 +188,43 @@ export const Inventory: React.FC<InventoryProps> = ({
             </tr>
           </thead>
           <tbody>
-            {items.map((item) => (
-              <tr key={item.id} className="inventory__table-row">
-                <td className="inventory__table-cell">{item.name}</td>
-                <td className="inventory__table-cell">{item.price.toLocaleString('id-ID')}</td>
-                <td className="inventory__table-cell">{item.quantity}</td>
-                <td className="inventory__table-cell inventory__table-cell--total">
-                  {(item.quantity * item.price).toLocaleString('id-ID')}
-                </td>
-                <td className="inventory__table-cell">
-                  {new Date(item.lastUpdated).toLocaleDateString()}
-                </td>
-                <td className="inventory__table-cell">
-                  <div className="inventory__action-buttons">
-                    <button
-                      className="inventory__button inventory__button--edit"
-                      onClick={() => openEditModal(item)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="inventory__button inventory__button--delete"
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
+            {items.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="inventory__empty">
+                  {filterConfig.filterType !== 'all' ? 'No items match your filter' : 'No items yet'}
                 </td>
               </tr>
-            ))}
+            ) : (
+              items.map((item) => (
+                <tr key={item.id} className="inventory__table-row">
+                  <td className="inventory__table-cell">{item.name}</td>
+                  <td className="inventory__table-cell">{item.price.toLocaleString('id-ID')}</td>
+                  <td className="inventory__table-cell">{item.quantity}</td>
+                  <td className="inventory__table-cell inventory__table-cell--total">
+                    {(item.quantity * item.price).toLocaleString('id-ID')}
+                  </td>
+                  <td className="inventory__table-cell">
+                    {new Date(item.lastUpdated).toLocaleDateString()}
+                  </td>
+                  <td className="inventory__table-cell">
+                    <div className="inventory__action-buttons">
+                      <button
+                        className="inventory__button inventory__button--edit"
+                        onClick={() => openEditModal(item)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="inventory__button inventory__button--delete"
+                        onClick={() => handleDelete(item.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
         </div>
@@ -167,8 +263,13 @@ export const Inventory: React.FC<InventoryProps> = ({
                 <input
                   type="number"
                   className="inventory__input"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                  value={formData.price === 0 ? '' : formData.price}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const cleaned = value.replace(/^0+(\d)/, '$1').replace(/^0+([^0.])/, '$1');
+                    const numValue = Number.parseFloat(cleaned);
+                    setFormData({ ...formData, price: Number.isNaN(numValue) ? 0 : numValue });
+                  }}
                   required
                 />
               </div>
@@ -178,10 +279,13 @@ export const Inventory: React.FC<InventoryProps> = ({
                 <input
                   type="number"
                   className="inventory__input"
-                  value={formData.quantity}
-                  onChange={(e) =>
-                    setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })
-                  }
+                  value={formData.quantity === 0 ? '' : formData.quantity}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const cleaned = value.replace(/^0+(\d)/, '$1').replace(/^0+([^0.])/, '$1');
+                    const numValue = Number.parseInt(cleaned);
+                    setFormData({ ...formData, quantity: Number.isNaN(numValue) ? 0 : numValue });
+                  }}
                   required
                 />
               </div>

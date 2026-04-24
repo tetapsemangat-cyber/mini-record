@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import type { InventoryItem, InventoryFormData } from '../types';
+import { useState, useEffect, useCallback } from 'react';
+import type { InventoryItem, InventoryFormData, DateFilterConfig } from '../types';
 import { inventoryService } from '../services/inventoryService';
 
 const getStatus = (quantity: number): 'available' | 'low' | 'out' => {
@@ -8,40 +8,77 @@ const getStatus = (quantity: number): 'available' | 'low' | 'out' => {
   return 'available';
 };
 
-export const useInventory = () => {
+export const resolveDateRange = (config: DateFilterConfig): { start: Date; end: Date } | null => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  switch (config.filterType) {
+    case 'today':
+      return { start: today, end: new Date(today.getTime() + 86400000 - 1) };
+    case 'thisMonth': {
+      const start = new Date(today.getFullYear(), today.getMonth(), 1);
+      const end = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+      return { start, end };
+    }
+    case 'custom': {
+      if (config.filterMonth) {
+        const [year, month] = config.filterMonth.split('-').map(Number);
+        const start = new Date(year, month - 1, 1);
+        const end = new Date(year, month, 0, 23, 59, 59, 999);
+        return { start, end };
+      }
+      if (config.filterStartDate && config.filterEndDate) {
+        return {
+          start: new Date(config.filterStartDate),
+          end: new Date(config.filterEndDate + 'T23:59:59.999'),
+        };
+      }
+      return null;
+    }
+    default:
+      return null;
+  }
+};
+
+export const useInventory = (filterConfig: DateFilterConfig) => {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load from Supabase on mount
-  useEffect(() => {
-    const loadItems = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await inventoryService.getAll();
-        setItems(data);
-      } catch (err) {
-        console.error('Error loading items:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load items');
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadItems();
+  const filterKey = JSON.stringify(filterConfig);
+
+  const fetchData = useCallback(async (config: DateFilterConfig) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const range = resolveDateRange(config);
+      const data = range
+        ? await inventoryService.getByDateRange(range.start, range.end)
+        : await inventoryService.getAll();
+      setItems(data);
+    } catch (err) {
+      console.error('Error loading items:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load items');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchData(filterConfig);
+  }, [filterKey, fetchData]);
 
   const createItem = async (formData: InventoryFormData) => {
     setLoading(true);
     setError(null);
     try {
-      const newItem = await inventoryService.create({
+      await inventoryService.create({
         name: formData.name,
         quantity: formData.quantity,
         price: formData.price,
         status: getStatus(formData.quantity),
       });
-      setItems((prev) => [...prev, newItem]);
+      await fetchData(filterConfig);
     } catch (err) {
       console.error('Error creating item:', err);
       setError(err instanceof Error ? err.message : 'Failed to create item');
@@ -63,8 +100,8 @@ export const useInventory = () => {
       }
       if (formData.price !== undefined) updateData.price = formData.price;
 
-      const updated = await inventoryService.update(id, updateData);
-      setItems((prev) => prev.map((item) => (item.id === id ? updated : item)));
+      await inventoryService.update(id, updateData);
+      await fetchData(filterConfig);
     } catch (err) {
       console.error('Error updating item:', err);
       setError(err instanceof Error ? err.message : 'Failed to update item');
@@ -79,7 +116,7 @@ export const useInventory = () => {
     setError(null);
     try {
       await inventoryService.delete(id);
-      setItems((prev) => prev.filter((item) => item.id !== id));
+      await fetchData(filterConfig);
     } catch (err) {
       console.error('Error deleting item:', err);
       setError(err instanceof Error ? err.message : 'Failed to delete item');
@@ -93,25 +130,10 @@ export const useInventory = () => {
     return items.reduce((sum, item) => sum + item.quantity * item.price, 0);
   };
 
-  const fetchItems = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await inventoryService.getAll();
-      setItems(data);
-    } catch (err) {
-      console.error('Error fetching items:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch items');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return {
     items,
     loading,
     error,
-    fetchItems,
     createItem,
     updateItem,
     deleteItem,

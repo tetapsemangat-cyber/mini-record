@@ -39,6 +39,68 @@
     border-radius: 0.75rem;
   }
 
+  &__filter {
+    background-color: #f8f8fc;
+    padding: 1.25rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  &__filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  &__filter-search {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 250px;
+  }
+
+  &__filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  &__filter-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  &__filter-sort-order {
+    display: flex;
+    align-items: flex-end;
+  }
+
+  &__filter-custom-dates {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  &__filter-date-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  &__empty {
+    text-align: center;
+    padding: 2rem;
+    color: #5a5a7a;
+    font-style: italic;
+  }
+
   &__summary-item {
     display: flex;
     flex-direction: column;

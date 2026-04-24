@@ -1,42 +1,48 @@
-import { useState, useEffect } from 'react';
-import type { DailyUsageRecord, ExpenseFormData } from '../types';
+import { useState, useEffect, useCallback } from 'react';
+import type { DailyUsageRecord, ExpenseFormData, DateFilterConfig } from '../types';
 import { dailyUsageService } from '../services/dailyUsageService';
+import { resolveDateRange } from './useInventory';
 
-export const useDailyUsage = () => {
+export const useDailyUsage = (filterConfig: DateFilterConfig) => {
   const [records, setRecords] = useState<DailyUsageRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load records from Supabase on mount
-  useEffect(() => {
-    const loadRecords = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await dailyUsageService.getAll();
-        setRecords(data);
-      } catch (err) {
-        console.error('Error loading records:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load records');
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadRecords();
+  const filterKey = JSON.stringify(filterConfig);
+
+  const fetchData = useCallback(async (config: DateFilterConfig) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const range = resolveDateRange(config);
+      const data = range
+        ? await dailyUsageService.getByDateRange(range.start, range.end)
+        : await dailyUsageService.getAll();
+      setRecords(data);
+    } catch (err) {
+      console.error('Error loading records:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load records');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchData(filterConfig);
+  }, [filterKey, fetchData]);
 
   const createRecord = async (formData: ExpenseFormData) => {
     setLoading(true);
     setError(null);
     try {
-      const newRecord = await dailyUsageService.create({
+      await dailyUsageService.create({
         person: formData.person,
         description: formData.description,
         amount: formData.amount,
         date: new Date(formData.date),
         notes: formData.notes,
       });
-      setRecords((prev) => [...prev, newRecord]);
+      await fetchData(filterConfig);
     } catch (err) {
       console.error('Error creating record:', err);
       setError(err instanceof Error ? err.message : 'Failed to create record');
@@ -57,8 +63,8 @@ export const useDailyUsage = () => {
       if (formData.date !== undefined) updateData.date = new Date(formData.date);
       if (formData.notes !== undefined) updateData.notes = formData.notes;
 
-      const updated = await dailyUsageService.update(id, updateData);
-      setRecords((prev) => prev.map((r) => (r.id === id ? updated : r)));
+      await dailyUsageService.update(id, updateData);
+      await fetchData(filterConfig);
     } catch (err) {
       console.error('Error updating record:', err);
       setError(err instanceof Error ? err.message : 'Failed to update record');
@@ -73,7 +79,7 @@ export const useDailyUsage = () => {
     setError(null);
     try {
       await dailyUsageService.delete(id);
-      setRecords((prev) => prev.filter((record) => record.id !== id));
+      await fetchData(filterConfig);
     } catch (err) {
       console.error('Error deleting record:', err);
       setError(err instanceof Error ? err.message : 'Failed to delete record');

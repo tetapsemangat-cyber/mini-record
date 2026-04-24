@@ -1,49 +1,10 @@
 import { useState } from 'react';
 import { Sidebar } from './components';
 import { Inventory, DailyUsage, SettlementMatrix } from './pages';
-import { useInventory, useDailyUsage, useSettlement } from './hooks';
-import type { SettlementItem } from './types';
 import './App.scss';
 
 function App() {
   const [currentView, setCurrentView] = useState<'inventory' | 'daily-usage' | 'settlement'>('inventory');
-
-  const {
-    items,
-    loading: inventoryLoading,
-    createItem,
-    updateItem,
-    deleteItem,
-  } = useInventory();
-
-  const {
-    records,
-    loading: expenseLoading,
-    createRecord,
-    updateRecord,
-    deleteRecord,
-  } = useDailyUsage();
-
-  const {
-    settlements,
-    loading: settlementLoading,
-    createSettlement,
-    updateSettlement,
-  } = useSettlement();
-
-  const handleCreateSettlement = (settlement: Omit<SettlementItem, 'id' | 'date' | 'status'>) => {
-    createSettlement({
-      title: settlement.title,
-      amount: settlement.amount,
-      payer: settlement.payer,
-      debtors: settlement.debtors,
-      reference: settlement.reference,
-    });
-  };
-
-  const handleUpdateSettlement = (id: string, updates: Partial<Omit<SettlementItem, 'id' | 'date' | 'status'>>) => {
-    updateSettlement(id, updates);
-  };
 
   return (
     <div className="dashboard">
@@ -61,34 +22,9 @@ function App() {
             </h1>
           </header>
 
-          {currentView === 'inventory' && (
-            <Inventory
-              items={items}
-              onCreateItem={createItem}
-              onUpdateItem={updateItem}
-              onDeleteItem={deleteItem}
-              loading={inventoryLoading}
-            />
-          )}
-
-          {currentView === 'daily-usage' && (
-            <DailyUsage
-              records={records}
-              onCreateRecord={createRecord}
-              onUpdateRecord={updateRecord}
-              onDeleteRecord={deleteRecord}
-              loading={expenseLoading}
-            />
-          )}
-
-          {currentView === 'settlement' && (
-            <SettlementMatrix
-              settlements={settlements}
-              onCreateSettlement={handleCreateSettlement}
-              onUpdateSettlement={handleUpdateSettlement}
-              loading={settlementLoading}
-            />
-          )}
+          {currentView === 'inventory' && <Inventory />}
+          {currentView === 'daily-usage' && <DailyUsage />}
+          {currentView === 'settlement' && <SettlementMatrix />}
         </main>
       </div>
     </div>

@@ -1,31 +1,33 @@
 import React, { useMemo, useState } from 'react';
-import type { SettlementItem } from '../../types';
+import { useSettlement } from '../../hooks/useSettlement';
+import type { SettlementItem, DateFilterConfig } from '../../types';
 import './SettlementMatrix.scss';
-
-export interface SettlementMatrixProps {
-  settlements: SettlementItem[];
-  onCreateSettlement?: (settlement: Omit<SettlementItem, 'id' | 'date' | 'status'>) => void;
-  onUpdateSettlement?: (id: string, updates: Partial<Omit<SettlementItem, 'id' | 'date' | 'status'>>) => void;
-  loading?: boolean;
-}
 
 interface NewDebtor {
   person: string;
   amount: string;
 }
 
-export const SettlementMatrix: React.FC<SettlementMatrixProps> = ({
-  settlements,
-  onCreateSettlement,
-  onUpdateSettlement,
-  loading = false,
-}) => {
+export const SettlementMatrix: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingSettlement, setEditingSettlement] = useState<SettlementItem | null>(null);
   const [title, setTitle] = useState('');
   const [payer, setPayer] = useState('');
   const [amount, setAmount] = useState('');
   const [debtors, setDebtors] = useState<NewDebtor[]>([]);
+  const [filterConfig, setFilterConfig] = useState<DateFilterConfig>({
+    filterType: 'all',
+    filterMonth: new Date().toISOString().slice(0, 7),
+    filterStartDate: '',
+    filterEndDate: '',
+  });
+
+  const {
+    settlements,
+    loading,
+    createSettlement,
+    updateSettlement,
+  } = useSettlement(filterConfig);
 
   // Extract all unique people (payers and debtors)
   const { allPeople, matrixData } = useMemo(() => {
@@ -41,7 +43,6 @@ export const SettlementMatrix: React.FC<SettlementMatrixProps> = ({
       }
 
       item.debtors.forEach((debtor) => {
-        // Skip if debtor is the same as payer
         if (debtor.person === payer) return;
 
         peopleSet.add(debtor.person);
@@ -68,7 +69,6 @@ export const SettlementMatrix: React.FC<SettlementMatrixProps> = ({
 
     Object.entries(matrixData).forEach(([payer, debtors]) => {
       Object.entries(debtors).forEach(([debtor, amount]) => {
-        // Skip if payer and debtor are the same
         if (payer === debtor) return;
 
         totals[payer].get += amount;
@@ -87,7 +87,6 @@ export const SettlementMatrix: React.FC<SettlementMatrixProps> = ({
 
     Object.entries(matrixData).forEach(([to, froms]) => {
       Object.entries(froms).forEach(([from, amount]) => {
-        // Skip if payer and debtor are the same person
         if (amount > 0 && from !== to) {
           list.push({ from, to, amount });
         }
@@ -158,10 +157,10 @@ export const SettlementMatrix: React.FC<SettlementMatrixProps> = ({
       reference: '',
     };
 
-    if (editingSettlement && onUpdateSettlement) {
-      onUpdateSettlement(editingSettlement.id, settlementData);
-    } else if (onCreateSettlement) {
-      onCreateSettlement(settlementData);
+    if (editingSettlement) {
+      updateSettlement(editingSettlement.id, settlementData);
+    } else {
+      createSettlement(settlementData);
     }
 
     resetForm();
@@ -183,6 +182,89 @@ export const SettlementMatrix: React.FC<SettlementMatrixProps> = ({
           >
             {showForm ? 'Cancel' : '+ Add Settlement'}
           </button>
+        </div>
+
+        {/* Filter Section */}
+        <div className="settlement-matrix__filter">
+          <div className="settlement-matrix__filter-buttons">
+            <button
+              className={`inventory__button ${filterConfig.filterType === 'all' ? 'inventory__button--primary' : 'inventory__button--secondary'}`}
+              onClick={() => setFilterConfig(prev => ({ ...prev, filterType: 'all' }))}
+            >
+              All Time
+            </button>
+            <button
+              className={`inventory__button ${filterConfig.filterType === 'today' ? 'inventory__button--primary' : 'inventory__button--secondary'}`}
+              onClick={() => setFilterConfig(prev => ({ ...prev, filterType: 'today' }))}
+            >
+              Today
+            </button>
+            <button
+              className={`inventory__button ${filterConfig.filterType === 'thisMonth' ? 'inventory__button--primary' : 'inventory__button--secondary'}`}
+              onClick={() => setFilterConfig(prev => ({ ...prev, filterType: 'thisMonth' }))}
+            >
+              This Month
+            </button>
+            <button
+              className={`inventory__button ${filterConfig.filterType === 'custom' ? 'inventory__button--primary' : 'inventory__button--secondary'}`}
+              onClick={() => setFilterConfig(prev => ({ ...prev, filterType: 'custom' }))}
+            >
+              Custom
+            </button>
+          </div>
+
+          {filterConfig.filterType === 'custom' && (
+            <div className="settlement-matrix__filter-custom">
+              <div className="settlement-matrix__filter-month">
+                <label className="settlement-matrix__filter-label">Filter by Month:</label>
+                <input
+                  type="month"
+                  className="inventory__input"
+                  value={filterConfig.filterMonth}
+                  onChange={(e) => {
+                    setFilterConfig(prev => ({
+                      ...prev,
+                      filterMonth: e.target.value,
+                      filterStartDate: '',
+                      filterEndDate: '',
+                    }));
+                  }}
+                />
+              </div>
+              <div className="settlement-matrix__filter-date-range">
+                <div className="settlement-matrix__filter-date">
+                  <label className="settlement-matrix__filter-label">From:</label>
+                  <input
+                    type="date"
+                    className="inventory__input"
+                    value={filterConfig.filterStartDate}
+                    onChange={(e) => {
+                      setFilterConfig(prev => ({
+                        ...prev,
+                        filterStartDate: e.target.value,
+                        filterMonth: '',
+                      }));
+                    }}
+                  />
+                </div>
+                <div className="settlement-matrix__filter-date">
+                  <label className="settlement-matrix__filter-label">To:</label>
+                  <input
+                    type="date"
+                    className="inventory__input"
+                    value={filterConfig.filterEndDate}
+                    onChange={(e) => {
+                      setFilterConfig(prev => ({
+                        ...prev,
+                        filterEndDate: e.target.value,
+                        filterMonth: '',
+                      }));
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Add/Edit Settlement Form */}
@@ -278,7 +360,9 @@ export const SettlementMatrix: React.FC<SettlementMatrixProps> = ({
         <div className="settlement-matrix__list">
           <h3 className="settlement-matrix__list-title">Settlements</h3>
           {settlements.length === 0 ? (
-            <p className="settlement-matrix__empty">No settlements yet</p>
+            <p className="settlement-matrix__empty">
+              {filterConfig.filterType === 'all' ? 'No settlements yet' : 'No settlements found for this filter'}
+            </p>
           ) : (
             <div className="settlement-matrix__list-items">
               {settlements.map((settlement) => (

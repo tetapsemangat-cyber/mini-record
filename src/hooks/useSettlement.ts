@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import type { SettlementItem, DebtorOwe } from '../types';
+import { useState, useEffect, useCallback } from 'react';
+import type { SettlementItem, DebtorOwe, DateFilterConfig } from '../types';
 import { settlementService } from '../services/settlementService';
+import { resolveDateRange } from './useInventory';
 
 export interface CreateSettlementFormData {
   title: string;
@@ -10,34 +11,39 @@ export interface CreateSettlementFormData {
   reference?: string;
 }
 
-export const useSettlement = () => {
+export const useSettlement = (filterConfig: DateFilterConfig) => {
   const [settlements, setSettlements] = useState<SettlementItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load from Supabase on mount
-  useEffect(() => {
-    const loadSettlements = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await settlementService.getAll();
-        setSettlements(data);
-      } catch (err) {
-        console.error('Error loading settlements:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load settlements');
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadSettlements();
+  const filterKey = JSON.stringify(filterConfig);
+
+  const fetchData = useCallback(async (config: DateFilterConfig) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const range = resolveDateRange(config);
+      const data = range
+        ? await settlementService.getByDateRange(range.start, range.end)
+        : await settlementService.getAll();
+      setSettlements(data);
+    } catch (err) {
+      console.error('Error loading settlements:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load settlements');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchData(filterConfig);
+  }, [filterKey, fetchData]);
 
   const createSettlement = async (formData: CreateSettlementFormData) => {
     setLoading(true);
     setError(null);
     try {
-      const newSettlement = await settlementService.create({
+      await settlementService.create({
         title: formData.title,
         amount: formData.amount,
         date: new Date(),
@@ -46,7 +52,7 @@ export const useSettlement = () => {
         payer: formData.payer,
         debtors: formData.debtors,
       });
-      setSettlements((prev) => [...prev, newSettlement]);
+      await fetchData(filterConfig);
     } catch (err) {
       console.error('Error creating settlement:', err);
       setError(err instanceof Error ? err.message : 'Failed to create settlement');
@@ -60,8 +66,8 @@ export const useSettlement = () => {
     setLoading(true);
     setError(null);
     try {
-      const updated = await settlementService.updateStatus(id, status);
-      setSettlements((prev) => prev.map((s) => (s.id === id ? updated : s)));
+      await settlementService.updateStatus(id, status);
+      await fetchData(filterConfig);
     } catch (err) {
       console.error('Error updating settlement status:', err);
       setError(err instanceof Error ? err.message : 'Failed to update status');
@@ -78,8 +84,8 @@ export const useSettlement = () => {
     setLoading(true);
     setError(null);
     try {
-      const updated = await settlementService.update(id, updates);
-      setSettlements((prev) => prev.map((s) => (s.id === id ? updated : s)));
+      await settlementService.update(id, updates);
+      await fetchData(filterConfig);
     } catch (err) {
       console.error('Error updating settlement:', err);
       setError(err instanceof Error ? err.message : 'Failed to update settlement');
@@ -94,7 +100,7 @@ export const useSettlement = () => {
     setError(null);
     try {
       await settlementService.delete(id);
-      setSettlements((prev) => prev.filter((s) => s.id !== id));
+      await fetchData(filterConfig);
     } catch (err) {
       console.error('Error deleting settlement:', err);
       setError(err instanceof Error ? err.message : 'Failed to delete settlement');
